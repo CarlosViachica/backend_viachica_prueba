@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { registrarGato, obtenerGatos, actualizarGato, eliminarGato, buscarGatos } from "../controllers/gato.controller.js";
+import { capturarInfoSolicitud } from "../middlewares/auditoria.js";
 
 const router = express.Router();
 
@@ -10,6 +11,11 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024,
   },
 });
+
+// Después de crear el router.
+// Debajo de const router = express.Router();
+router.use(capturarInfoSolicitud);   // aplica a todas las rutas de este router
+
 
 router.post(
   "/gato",

@@ -54,14 +54,23 @@ const nombreArchivo = `gato-${Date.now()}-${Math.random()
       .getPublicUrl(rutaImagen);
 
     const imagenUrl = publicUrlData.publicUrl;
-
-    const docRef = await db.collection("gatos").add({
+    const valoresNuevos = {
       nombre,
       edad: Number(edad),
       peso: Number(peso),
       raza,
       imagenUrl,
       fecha: new Date().toISOString(),
+    };
+
+    const docRef = await db.collection("gatos").add(valoresNuevos);
+
+    await guardarAuditoria({
+      accion: "crear",
+      gatoId: docRef.id,
+      valoresAnteriores: null,
+      valoresNuevos,
+      req,
     });
 
     res.status(201).json({
@@ -120,7 +129,8 @@ export const actualizarGato = async (req, res) => {
       });
     }
 
-    let imagenUrl = doc.data().imagenUrl; // mantener la imagen actual por defecto
+    const datosAnteriores = doc.data();
+    let imagenUrl = datosAnteriores.imagenUrl; // mantener la imagen actual por defecto
 
     // Si se subió una nueva imagen, la actualizamos
     if (imagen) {
@@ -158,12 +168,28 @@ export const actualizarGato = async (req, res) => {
       imagenUrl = publicUrlData.publicUrl;
     }
 
-    await docRef.update({
+    const valoresNuevos = {
       nombre,
       edad: Number(edad),
       peso: Number(peso),
       raza,
       imagenUrl,
+    };
+
+    await docRef.update(valoresNuevos);
+
+    await guardarAuditoria({
+      accion: "actualizar",
+      gatoId: id,
+      valoresAnteriores: {
+        nombre: datosAnteriores.nombre,
+        edad: datosAnteriores.edad,
+        peso: datosAnteriores.peso,
+        raza: datosAnteriores.raza,
+        imagenUrl: datosAnteriores.imagenUrl,
+      },
+      valoresNuevos,
+      req,
     });
 
     res.status(200).json({
@@ -194,8 +220,10 @@ export const eliminarGato = async (req, res) => {
       });
     }
 
+    const datosAnteriores = doc.data();
+
     // Eliminar la imagen de Supabase
-    const imagenUrl = doc.data().imagenUrl;
+    const imagenUrl = datosAnteriores.imagenUrl;
     if (imagenUrl) {
       try {
         // Extraer la ruta del archivo desde la URL pública
@@ -210,6 +238,20 @@ export const eliminarGato = async (req, res) => {
 
     // Eliminar el documento de Firestore
     await docRef.delete();
+
+    await guardarAuditoria({
+      accion: "eliminar",
+      gatoId: id,
+      valoresAnteriores: {
+        nombre: datosAnteriores.nombre,
+        edad: datosAnteriores.edad,
+        peso: datosAnteriores.peso,
+        raza: datosAnteriores.raza,
+        imagenUrl: datosAnteriores.imagenUrl,
+      },
+      valoresNuevos: null,
+      req,
+    });
 
     res.status(200).json({
       mensaje: `Gato eliminado con éxito. ID: ${id}`,
@@ -268,3 +310,30 @@ export const buscarGatos = async (req, res) => {
     });
   }
 };
+
+export const guardarAuditoria = async ({
+  accion,
+  gatoId,
+  valoresAnteriores = null,
+  valoresNuevos = null,
+  req,
+}) => {
+  try {
+    await db.collection("auditoria_gatos").add({
+      accion,
+      gatoId: gatoId || null,
+      fecha: new Date().toISOString(),
+      ip: req.auditoria?.ip || "desconocida",
+      userAgent: req.auditoria?.userAgent || "desconocido",
+      metodo: req.auditoria?.metodo || req.method,
+      ruta: req.auditoria?.ruta || req.originalUrl,
+      valoresAnteriores,
+      valoresNuevos,
+    });
+  } catch (err) {
+    // No rompemos la operación principal si falla el log
+    console.error("Error al guardar auditoría:", err.message);
+  }
+};
+
+
