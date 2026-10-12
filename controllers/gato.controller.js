@@ -238,7 +238,7 @@ export const eliminarGato = async (req, res) => {
 
     // Eliminar el documento de Firestore
     await docRef.delete();
-
+    
     await guardarAuditoria({
       accion: "eliminar",
       gatoId: id,
