@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { registrarGato, obtenerGatos, actualizarGato, eliminarGato, buscarGatos, enviarGatosPorEmai } from "../controllers/gato.controller.js";
+import { registrarGato, obtenerGatos, actualizarGato, eliminarGato, buscarGatos, enviarGatosPorEmail } from "../controllers/gato.controller.js";
 import { capturarInfoSolicitud } from "../middlewares/auditoria.js";
 
 
