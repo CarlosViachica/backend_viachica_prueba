@@ -4,6 +4,8 @@ import gatoRoutes from "./routes/gato.routes.js";
 import climaRoutes from "./routes/clima.routes.js";
 import rateLimit from "express-rate-limit";
 import db from "./firebase.js";  // Para el registro de la bitácora
+import estadisticasRoutes from "./routes/estadisticas.routes.js";
+
 
 const app = express();
 
@@ -37,7 +39,7 @@ const limiterGatos = rateLimit({
 
 app.use("/gato", limiterGatos);
 app.use("/gatos", limiterGatos);
-
+app.use(estadisticasRoutes);   // agrega esta línea junto a las otras rutas
 
 // Rutas
 app.use(gatoRoutes);
